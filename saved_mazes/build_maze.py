@@ -25,19 +25,19 @@ MARGIN = 5
 
 def init_grid(D):
     grid = np.zeros((D, D), dtype=int)
-    # grid[0, :] = 10
-    # grid[-1, :] = 10
-    # grid[:, 0] = 10
-    # grid[:, -1] = 10
+    grid[0, :] = 10
+    grid[-1, :] = 10
+    grid[:, 0] = 10
+    grid[:, -1] = 10
     return grid
 
 
 def save_grid(grid):
     new_grid = copy.deepcopy(grid)
-    # new_grid[0, :] = 1
-    # new_grid[-1, :] = 1
-    # new_grid[:, 0] = 1
-    # new_grid[:, -1] = 1
+    new_grid[0, :] = 1
+    new_grid[-1, :] = 1
+    new_grid[:, 0] = 1
+    new_grid[:, -1] = 1
     new_grid = new_grid.astype("int").tolist()
     file_name = "maze_" + time.strftime("%y%m%d") + "_" + time.strftime("%H%M%S") + ".json"
     with open(file_name, "w") as f:
@@ -53,8 +53,13 @@ def plot_maze(file_name):
     plt.show()
 
 
-def make_maze(D=10):
-    grid = init_grid(D)
+def make_maze(D=10, grid_path=None):
+    if grid_path is None:
+        grid = init_grid(D)
+    else:
+        with open(grid_path, "r") as f:
+            grid = np.asarray(json.load(f))
+        D = len(grid)
     window_dim = (D * SQUARE_DIM) + ((D + 1) * MARGIN)
     pygame.init()
     pygame.display.set_caption("Maze Builder")
@@ -82,8 +87,7 @@ def make_maze(D=10):
 
         for row in range(D):
             for column in range(D):
-                # if grid[row, column] == 10 or grid[row, column] == 1:
-                if grid[row, column] == 1:
+                if grid[row, column] == 10 or grid[row, column] == 1:
                     c = BLUE
                 elif grid[row, column] == 2:
                     c = GREEN
@@ -103,5 +107,6 @@ def make_maze(D=10):
 
 
 if __name__ == "__main__":
-    # make_maze(D=18)
-    plot_maze("maze_hard_grid")
+    # make_maze(D=20)
+    # make_maze(grid_path="maze_hard_grid.json")
+    plot_maze("grid_hard")
