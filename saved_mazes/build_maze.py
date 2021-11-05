@@ -19,8 +19,8 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
-SQUARE_DIM = 20
-MARGIN = 5
+SQUARE_DIM = 10
+MARGIN = 4
 
 
 def init_grid(D):
@@ -107,6 +107,6 @@ def make_maze(D=10, grid_path=None):
 
 
 if __name__ == "__main__":
-    # make_maze(D=20)
-    # make_maze(grid_path="maze_hard_grid.json")
-    plot_maze("grid_hard")
+    # make_maze(D=40)
+    # make_maze(grid_path="grid_hard_84.json")
+    plot_maze("grid_hard_40")
