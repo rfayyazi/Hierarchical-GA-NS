@@ -107,6 +107,6 @@ def make_maze(D=10, grid_path=None):
 
 
 if __name__ == "__main__":
-    # make_maze(D=40)
+    make_maze(D=40)
     # make_maze(grid_path="grid_hard_84.json")
-    plot_maze("grid_hard_40")
+    # plot_maze("grid_hard_40")

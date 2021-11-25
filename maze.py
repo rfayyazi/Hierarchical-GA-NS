@@ -23,7 +23,7 @@ class Maze:
         return state.flatten()
 
     def step(self, action):
-        assert action in [0, 1, 2, 3], "action must be 0 (up), 1 (down), 2 (right) or 3 (left)"
+        assert action in [0, 1, 2, 3], "action must be 0 (down), 1 (up), 2 (right) or 3 (left)"
         if action == 0 and self.grid[self.curr_pos[0] + 1, self.curr_pos[1]] != 1:  # legal move down
             self.curr_pos[0] += 1
         elif action == 1 and self.grid[self.curr_pos[0] - 1, self.curr_pos[1]] != 1:  # legal move up

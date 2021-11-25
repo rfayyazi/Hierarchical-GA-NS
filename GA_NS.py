@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import copy
 import time
@@ -6,13 +7,15 @@ from tqdm import tqdm
 import torch
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
-import matplotlib.pyplot as plt
+import wandb
 
 from maze import Maze
 from agent import Primitive
-
+from plotting import plot_grid, plot_loss
+from utils import save_args
 
 def run(env, policy, T):
+    env.reset()
     S = env.get_current_state()
     for t in range(T):
         S = torch.from_numpy(S).float()
@@ -23,13 +26,12 @@ def run(env, policy, T):
 
 
 def train(args, env):
+    best_performances = []    # track performance (distance to goal) of most performant individual in each generation
+    best_behaviours = []      # track behaviour (final position) of most performant individual in each generation
+    novelest_behaviours = []  # track behaviour of most novel individual in each generation
+    all_behaviours = []       # track behaviour of all individuals in all generations
 
-    # track performance (distance to goal) and behaviour (final position) of most performant individual in each gen
-    best_performances = []
-    best_behaviours = []
-    all_behaviours = []
-    novelest_behaviours = []
-
+    solution_found = False
     archive = []
     population = []
     BC = []
@@ -38,37 +40,31 @@ def train(args, env):
         new_population = []
         new_BC = []
         for i in range(1, args.N):
-
             if g == 0:
                 policy = Primitive(env.D**2, 4, args.hidden_dims)
                 for theta in policy.parameters():
                     theta.requires_grad = False
             else:
-                t = np.random.randint(args.T)
-                policy = population[t]
+                policy = copy.deepcopy(population[np.random.randint(args.T)])
                 for theta in policy.parameters():
                     theta += args.sigma * torch.normal(0.0, 1.0, size=theta.shape)
             new_population.append(policy)
-            env.reset()
-            bc = run(env, policy, args.t_max)
-            new_BC.append(bc)
+            new_BC.append(run(env, policy, args.t_max))
 
         if g == 0:
             population = [copy.deepcopy(policy) for policy in new_population]
             BC = [copy.deepcopy(bc) for bc in new_BC]
-            N = args.N - 1
         else:
             population = [population[0]] + [copy.deepcopy(policy) for policy in new_population]
             BC = [BC[0]] + [copy.deepcopy(bc) for bc in new_BC]
-            N = args.N
 
         novelty = []
         best_performance = np.inf
         best_behaviour = np.array([0, 0])
-        for i in range(N):
+        for i in range(len(population)):
             others = np.asarray(BC[:i] + BC[i+1:] + archive)
-            nbrs = NearestNeighbors(n_neighbors=args.k, algorithm="kd_tree", metric="euclidean").fit(others)
-            distances, _ = nbrs.kneighbors(np.asarray([BC[i]]))
+            neighbours = NearestNeighbors(n_neighbors=args.k, algorithm="kd_tree", metric="euclidean").fit(others)
+            distances, _ = neighbours.kneighbors(np.asarray([BC[i]]))
             novelty.append(sum(distances[0]) / args.k)
 
             performance = np.linalg.norm(env.goal_pos - BC[i])
@@ -91,33 +87,17 @@ def train(args, env):
     return best_performances, best_behaviours, novelest_behaviours, all_behaviours
 
 
-def plot_grid(env, behaviours, results_path, plot_name):
-    env.reset()
-    env.grid[tuple(env.start_pos)] = 2
-    plt.imshow(env.grid)
-    x = [bc[1] for bc in behaviours]
-    y = [bc[0] for bc in behaviours]
-    plt.scatter(x, y, c="red", s=0.5)
-    plt.savefig(os.path.join(results_path, plot_name + ".png"))
-    plt.clf()
-
-
-def plot_loss(loss, results_path):
-    plt.plot(loss)
-    plt.savefig(os.path.join(results_path, "loss.png"))
-    plt.clf()
-
-
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--t_max", default=150, help="time limit for episode", type=int)
-    parser.add_argument("--G", default=200, help="number of generations", type=int)
+    parser.add_argument("--t_max", default=200, help="time limit for episode", type=int)
+    parser.add_argument("--G", default=300, help="number of generations", type=int)
     parser.add_argument("--N", default=100, help="population size", type=int)
     parser.add_argument("--T", default=30, help="truncation size", type=int)
     parser.add_argument("--sigma", default=0.005, help="parameter mutation standard deviation", type=float)
     parser.add_argument("--hidden_dims", default=[128, 128], help="list of 2 hidden dims of policy network", nargs="+")
     parser.add_argument("--k", default=25, help="number of nearest neighbours for novelty", type=int)
     parser.add_argument("--p", default=0.01, help="archive probability", type=float)
+    parser.add_argument("--D", default=40, help="maze dim, 20 or 40 or 84", type=int)
     args = parser.parse_args()
 
     assert args.N > args.T, "population size (N) must be greater than truncation size (T)"
@@ -130,12 +110,23 @@ def get_args():
 def main():
     args = get_args()
     os.mkdir(args.results_path)
-    env = Maze("saved_mazes/grid_hard_20.json")
+
+    if "--unobserve" in sys.argv:
+        sys.argv.remove("--unobserve")
+        os.environ["WANDB_MODE"] = "dryrun"
+    os.environ["WANDB_CONSOLE"] = "off"
+    wandb.init(project="CS532J_Final", entity="rfayyazi", config=args, name=args.run_name, tags=[args.exp_tag])
+
+    env = Maze("saved_mazes/grid_hard_" + str(args.D) + ".json")
+    args.reward_bias = np.linalg.norm(env.goal_pos - np.array([args.D, args.D]))
     best_ps, best_bs, novel_bs, all_bs = train(args, env)
+
     plot_grid(env, best_bs, args.results_path, "best_behaviours")
     plot_grid(env, novel_bs, args.results_path, "novelest_behaviours")
     plot_grid(env, all_bs, args.results_path, "all_behaviours")
     plot_loss(best_ps, args.results_path)
+
+    save_args(args)
 
 
 if __name__ == "__main__":

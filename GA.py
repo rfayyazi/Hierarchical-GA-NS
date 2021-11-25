@@ -113,9 +113,9 @@ def plot_loss(loss, results_path):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--t_max", default=150, help="time limit for episode", type=int)
+    parser.add_argument("--t_max", default=200, help="time limit for episode", type=int)
     parser.add_argument("--G", default=200, help="number of generations", type=int)
-    parser.add_argument("--N", default=100, help="population size", type=int)
+    parser.add_argument("--N", default=200, help="population size", type=int)
     parser.add_argument("--T", default=30, help="truncation size", type=int)
     parser.add_argument("--n_candidates", default=10, help="num of best performers to consider candidates", type=int)
     parser.add_argument("--sigma", default=0.005, help="parameter mutation standard deviation", type=float)
