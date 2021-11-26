@@ -89,14 +89,14 @@ def train(args, env):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--t_max", default=200, help="time limit for episode", type=int)
-    parser.add_argument("--G", default=300, help="number of generations", type=int)
+    parser.add_argument("--t_max", default=300, help="time limit for episode", type=int)
+    parser.add_argument("--G", default=500, help="number of generations", type=int)
     parser.add_argument("--N", default=100, help="population size", type=int)
     parser.add_argument("--T", default=30, help="truncation size", type=int)
     parser.add_argument("--sigma", default=0.005, help="parameter mutation standard deviation", type=float)
     parser.add_argument("--hidden_dims", default=[128, 128], help="list of 2 hidden dims of policy network", nargs="+")
     parser.add_argument("--k", default=25, help="number of nearest neighbours for novelty", type=int)
-    parser.add_argument("--p", default=0.01, help="archive probability", type=float)
+    parser.add_argument("--p", default=0.05, help="archive probability", type=float)
     parser.add_argument("--D", default=40, help="maze dim, 20 or 40 or 84", type=int)
     args = parser.parse_args()
 
