@@ -132,7 +132,7 @@ def get_args():
 def main():
     args = get_args()
     os.mkdir(args.results_path)
-    env = Maze("saved_mazes/grid_hard_20.json")
+    env = Maze("saved_mazes/grid_hard_84.json")
     best_ps, best_bs, all_bs = train(args, env)
     plot_grid(env, best_bs, args.results_path, "best_behaviours")
     plot_grid(env, all_bs, args.results_path, "all_behaviours")
