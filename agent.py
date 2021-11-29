@@ -4,14 +4,19 @@ import torch.nn.functional as F
 
 
 class Primitive(nn.Module):
-    def __init__(self, in_dim, out_dim, hidden_dims):
+    def __init__(self, out_dim):
         super().__init__()
         self.type = "primitive"
-        modules = build_modules(in_dim, out_dim, hidden_dims)
-        self.network = nn.Sequential(*modules)
+        self.conv = nn.Sequential(
+            nn.Conv2d(1, 4, kernel_size=(3, 3)),
+            nn.ReLU()
+        )
+        self.full = nn.Linear(4*38*38, out_dim)
 
     def forward(self, x):
-        out = self.network(x)
+        out = self.conv(x)
+        out = torch.flatten(out)
+        out = self.full(out)
         return F.softmax(out, dim=0)
 
 
