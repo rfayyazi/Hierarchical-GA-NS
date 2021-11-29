@@ -1,29 +1,16 @@
 import os
-import argparse
 import copy
+import argparse
 import time
-from tqdm import tqdm
-import torch
 import numpy as np
+import torch
 import pickle
 import json
+from tqdm import tqdm
 
-from maze import Maze
+from maze import Maze, run
 from agent import Primitive
 from plotting import plot_grid, plot_loss
-
-
-def run(env, policy, T, deterministic):
-    env.reset()
-    S = env.get_current_state()
-    for t in range(T):
-        S = torch.from_numpy(S).float()
-        if deterministic:
-            A = torch.argmax(policy(S))
-        else:
-            A = torch.distributions.Categorical(policy(S)).sample()
-        S = env.step(A)
-    return env.curr_pos
 
 
 def train(args, env):

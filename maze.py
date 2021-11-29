@@ -1,5 +1,6 @@
 import numpy as np
 import json
+import torch
 
 
 class Maze:
@@ -37,6 +38,19 @@ class Maze:
         elif action == 3 and self.grid[self.curr_pos[0], self.curr_pos[1] - 1] != 1:  # legal move left
             self.curr_pos[1] -= 1
         return self.get_current_state()
+
+
+def run(env, policy, T, deterministic):
+    env.reset()
+    S = env.get_current_state()
+    for t in range(T):
+        S = torch.from_numpy(S).float()
+        if deterministic:
+            A = torch.argmax(policy(S))
+        else:
+            A = torch.distributions.Categorical(policy(S)).sample()
+        S = env.step(A)
+    return env.curr_pos
 
 
 if __name__ == "__main__":

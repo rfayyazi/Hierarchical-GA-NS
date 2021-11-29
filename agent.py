@@ -4,14 +4,14 @@ import torch.nn.functional as F
 
 
 class Primitive(nn.Module):
-    def __init__(self, out_dim):
+    def __init__(self, out_dim, D):
         super().__init__()
         self.type = "primitive"
         self.conv = nn.Sequential(
             nn.Conv2d(1, 4, kernel_size=(3, 3)),
             nn.ReLU()
         )
-        self.full = nn.Linear(4*38*38, out_dim)
+        self.full = nn.Linear(4*(D-2)*(D-2), out_dim)
 
     def forward(self, x):
         out = self.conv(x)

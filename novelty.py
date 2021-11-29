@@ -1,30 +1,17 @@
 import os
-import argparse
 import copy
+import argparse
 import time
-from tqdm import tqdm
-import torch
 from sklearn.neighbors import NearestNeighbors
+import torch
 import numpy as np
 import pickle
 import json
+from tqdm import tqdm
 
-from maze import Maze
+from maze import Maze, run
 from agent import Primitive
 from plotting import plot_grid, plot_loss
-
-
-def run(env, policy, T, deterministic):
-    env.reset()
-    S = env.get_current_state()
-    for t in range(T):
-        S = torch.from_numpy(S).float()
-        if deterministic:
-            A = torch.argmax(policy(S))
-        else:
-            A = torch.distributions.Categorical(policy(S)).sample()
-        S = env.step(A)
-    return env.curr_pos
 
 
 def train(args, env):
@@ -45,7 +32,7 @@ def train(args, env):
         B_new = []
         for i in range(1, args.N):
             if g == 0:
-                policy = Primitive(4)
+                policy = Primitive(4, args.D)
                 for theta in policy.parameters():
                     theta.requires_grad = False
             else:
@@ -93,16 +80,16 @@ def train(args, env):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--G",           default=300,   help="number of generations",                 type=int)
-    parser.add_argument("--N",           default=400,   help="population size",                       type=int)
+    parser.add_argument("--G",           default=250,   help="number of generations",                 type=int)
+    parser.add_argument("--N",           default=300,   help="population size",                       type=int)
     parser.add_argument("--T",           default=30,    help="truncation size",                       type=int)
     parser.add_argument("--sigma",       default=0.005, help="parameter mutation standard dev",       type=float)
-    parser.add_argument("--p",           default=0.05,  help="archive probability",                   type=float)
-    parser.add_argument("--k",           default=20,    help="num of nearest neighbours for novelty", type=int)
+    parser.add_argument("--p",           default=1.0,   help="archive probability",                   type=float)
+    parser.add_argument("--k",           default=30,    help="num of nearest neighbours for novelty", type=int)
     parser.add_argument("--det_policy",  default=True,  help="deterministic policy?",                 type=bool)
-    parser.add_argument("--D",           default=40,    help="maze dim, 20 or 40 or 84",              type=int)
-    parser.add_argument("--t_max",       default=250,   help="time limit for episode",                type=int)
-    parser.add_argument("--tiny_exp",     default=False, help="if true, run tiny experiment (small G, N, t_max)")
+    parser.add_argument("--D",           default=84,    help="maze dim, 20 or 40 or 84",              type=int)
+    parser.add_argument("--t_max",       default=200,   help="time limit for episode",                type=int)
+    parser.add_argument("--tiny_exp",    default=False, help="if true, run tiny experiment (small G, N, t_max)")
     args = parser.parse_args()
 
     if args.tiny_exp:
