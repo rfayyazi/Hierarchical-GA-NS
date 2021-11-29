@@ -1,17 +1,16 @@
 import os
-import sys
 import argparse
 import copy
 import time
 from tqdm import tqdm
 import torch
 import numpy as np
-import wandb
+import pickle
+import json
 
 from maze import Maze
 from agent import Primitive
 from plotting import plot_grid, plot_loss
-from utils import save_args
 
 
 def run(env, policy, T, deterministic):
@@ -107,14 +106,21 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--G",            default=300,   help="number of generations", type=int)
     parser.add_argument("--N",            default=400,   help="population size", type=int)
-    parser.add_argument("--T",            default=10,    help="truncation size", type=int)
+    parser.add_argument("--T",            default=30,    help="truncation size", type=int)
     parser.add_argument("--n_candidates", default=10,    help="num of best performers to consider candidates", type=int)
     parser.add_argument("--R",            default=10,    help="number of repeats for candidate evaluation", type=int)
     parser.add_argument("--sigma",        default=0.005, help="parameter mutation standard deviation", type=float)
     parser.add_argument("--det_policy",   default=True,  help="deterministic policy?", type=bool)
     parser.add_argument("--D",            default=40,    help="maze dim, 20 or 40 or 84", type=int)
-    parser.add_argument("--t_max",        default=200,   help="time limit for episode", type=int)
+    parser.add_argument("--t_max",        default=250,   help="time limit for episode", type=int)
+    parser.add_argument("--tiny_exp",     default=False, help="if true, run tiny experiment (small G, N, t_max)")
     args = parser.parse_args()
+
+    if args.tiny_exp:
+        args.G = 10
+        args.T = 5
+        args.N = 20
+        args.t_max = 10
 
     assert args.N > args.T, "population size (N) must be greater than truncation size (T)"
     args.exp_tag = "O"
@@ -127,22 +133,18 @@ def main():
     args = get_args()
     os.mkdir(args.results_path)
 
-    if "--unobserve" in sys.argv:
-        sys.argv.remove("--unobserve")
-        os.environ["WANDB_MODE"] = "dryrun"
-    os.environ["WANDB_CONSOLE"] = "off"
-    wandb.init(project="CS532J_Final", entity="rfayyazi", config=args, name=args.run_name, tags=[args.exp_tag])
-
     env = Maze("saved_mazes/grid_hard_" + str(args.D) + ".json")
-
     behaviour_results, performance_results = train(args, env)
 
     plot_grid(env, behaviour_results["best"], args.results_path, "best_behaviours")
     plot_grid(env, behaviour_results["all"], args.results_path, "all_behaviours")
     plot_loss(performance_results["best"], args.results_path)
 
-    save_args(args)
+    json.dump(vars(args), open(os.path.join(args.results_path, "args.json"), "w"))
+    pickle.dump(behaviour_results, open(os.path.join(args.results_path, "behav_res.p"), "wb"))
+    pickle.dump(performance_results, open(os.path.join(args.results_path, "perf_res.p"), "wb"))
 
 
 if __name__ == "__main__":
     main()
+    # pickle.load( open( "results/O-211128-195306/behav_res.p", "rb" ) )
