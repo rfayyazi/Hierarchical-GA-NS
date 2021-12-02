@@ -10,7 +10,7 @@ import json
 from tqdm import tqdm
 
 from maze import Maze, run
-from agent import Primitive
+from policy import PrimBig, PrimSmall, Controller
 from plotting import plot_grid, plot_loss
 
 
@@ -32,7 +32,7 @@ def train(args, env):
         B_new = []
         for i in range(1, args.N):
             if g == 0:
-                policy = Primitive(4, args.D)
+                policy = PrimBig()
                 for theta in policy.parameters():
                     theta.requires_grad = False
             else:
@@ -52,9 +52,9 @@ def train(args, env):
         best_per = np.inf  # best performance so far
         best_beh = None    # behaviour characterization of best performer so far
         for i in range(len(P)):
-            others = np.asarray(B[:i] + B[i + 1:] + A)
+            others = [list(o) for o in B[:i] + B[i + 1:] + A]
             neighbours = NearestNeighbors(n_neighbors=args.k, algorithm="kd_tree", metric="euclidean").fit(others)
-            distances, _ = neighbours.kneighbors(np.asarray([B[i]]))
+            distances, _ = neighbours.kneighbors([list(B[i])])
             novelty.append(sum(distances[0]) / args.k)
 
             performance = np.linalg.norm(env.goal_pos - B[i])
@@ -80,24 +80,16 @@ def train(args, env):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--G",           default=250,   help="number of generations",                 type=int)
-    parser.add_argument("--N",           default=300,   help="population size",                       type=int)
-    parser.add_argument("--T",           default=30,    help="truncation size",                       type=int)
-    parser.add_argument("--sigma",       default=0.005, help="parameter mutation standard dev",       type=float)
-    parser.add_argument("--p",           default=1.0,   help="archive probability",                   type=float)
-    parser.add_argument("--k",           default=30,    help="num of nearest neighbours for novelty", type=int)
-    parser.add_argument("--det_policy",  default=True,  help="deterministic policy?",                 type=bool)
-    parser.add_argument("--D",           default=84,    help="maze dim, 20 or 40 or 84",              type=int)
-    parser.add_argument("--t_max",       default=200,   help="time limit for episode",                type=int)
-    parser.add_argument("--tiny_exp",    default=False, help="if true, run tiny experiment (small G, N, t_max)")
+    parser.add_argument("--G",          default=400,   help="number of generations",                 type=int)
+    parser.add_argument("--N",          default=1000,   help="population size",                       type=int)
+    parser.add_argument("--T",          default=25,    help="truncation size",                       type=int)
+    parser.add_argument("--sigma",      default=0.005, help="parameter mutation standard dev",       type=float)
+    parser.add_argument("--p",          default=0.1,   help="archive probability",                   type=float)
+    parser.add_argument("--k",          default=10,    help="num of nearest neighbours for novelty", type=int)
+    parser.add_argument("--det_policy", default=True,  help="deterministic policy?",                 type=bool)
+    parser.add_argument("--D",          default=40,    help="maze dim, 40 or 84",                    type=int)
+    parser.add_argument("--t_max",      default=100,   help="time limit for episode",                type=int)
     args = parser.parse_args()
-
-    if args.tiny_exp:
-        args.G = 10
-        args.T = 5
-        args.k = 5
-        args.N = 20
-        args.t_max = 10
 
     assert args.N > args.T, "population size (N) must be greater than truncation size (T)"
     args.exp_tag = "N"

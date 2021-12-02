@@ -9,7 +9,7 @@ import json
 from tqdm import tqdm
 
 from maze import Maze, run
-from agent import Primitive
+from policy import PrimBig
 from plotting import plot_grid, plot_loss
 
 
@@ -28,7 +28,7 @@ def train(args, env):
         for i in range(1, args.N):
 
             if g == 0:
-                policy = Primitive(4)
+                policy = PrimBig()
                 for theta in policy.parameters():
                     theta.requires_grad = False
             else:
@@ -91,7 +91,7 @@ def train(args, env):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--G",            default=300,   help="number of generations", type=int)
+    parser.add_argument("--G",            default=1000,   help="number of generations", type=int)
     parser.add_argument("--N",            default=400,   help="population size", type=int)
     parser.add_argument("--T",            default=30,    help="truncation size", type=int)
     parser.add_argument("--n_candidates", default=10,    help="num of best performers to consider candidates", type=int)
@@ -100,14 +100,7 @@ def get_args():
     parser.add_argument("--det_policy",   default=True,  help="deterministic policy?", type=bool)
     parser.add_argument("--D",            default=40,    help="maze dim, 20 or 40 or 84", type=int)
     parser.add_argument("--t_max",        default=250,   help="time limit for episode", type=int)
-    parser.add_argument("--tiny_exp",     default=False, help="if true, run tiny experiment (small G, N, t_max)")
     args = parser.parse_args()
-
-    if args.tiny_exp:
-        args.G = 10
-        args.T = 5
-        args.N = 20
-        args.t_max = 10
 
     assert args.N > args.T, "population size (N) must be greater than truncation size (T)"
     args.exp_tag = "O"
